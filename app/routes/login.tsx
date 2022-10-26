@@ -2,14 +2,20 @@
 import { useState } from "react";
 import FormFields from "~/components/form-fields";
 import { Layout } from "~/components/layout";
-import type { ActionFunction } from "@remix-run/node";  // <--- Remix looks for an exported function named action to set up a POST request on the route
+import type { ActionFunction, LoaderFunction } from "@remix-run/node"; // <--- Remix looks for an exported function named action to set up a POST request on the route
+import { redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import {
   validateEmail,
   validateName,
   validatePassword,
 } from "~/ultis/validators.server";
-import { login, register } from "~/ultis/auth.server";
+import { login, register, getUser } from "~/ultis/auth.server";
+
+export const loader: LoaderFunction = async ({ request }) => {
+  // If there's already a user in the session, redirect to the home page
+  return (await getUser(request)) ? redirect("/") : null;
+};
 
 export const action: ActionFunction = async ({ request }) => {
   /**
