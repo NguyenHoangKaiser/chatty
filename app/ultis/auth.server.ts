@@ -1,6 +1,7 @@
-import type { RegisterForm } from "./types.server";
+import bcrypt from "bcryptjs";
+import type { RegisterForm, LoginForm } from "./types.server";
 import { prisma } from "./prisma.server";
-import { json } from "@remix-run/node";
+import { redirect, json, createCookieSessionStorage } from "@remix-run/node";
 import { createUser } from "./user.server";
 
 export async function register(user: RegisterForm) {
@@ -13,7 +14,7 @@ export async function register(user: RegisterForm) {
   }
 
   const newUser = await createUser(user);
-  if (newUser) {
+  if (!newUser) {
     return json(
       {
         error: `Something went wrong trying to create a new user, please try again later`,
@@ -22,4 +23,40 @@ export async function register(user: RegisterForm) {
       { status: 400 }
     );
   }
+  return createUserSession(newUser.id, "/");
+}
+
+export async function login({ email, password }: LoginForm) {
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return json({ error: `Email or password is incorrect` }, { status: 400 });
+  }
+
+  return createUserSession(user.id, "/");
+}
+
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+  throw new Error("Please set the SESSION_SECRET environment variable");
+}
+
+const storage = createCookieSessionStorage({
+  cookie: {
+    name: "__session",
+    secure: process.env.NODE_ENV === "production",
+    secrets: [sessionSecret],
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 7, // 1 week
+  },
+});
+
+export async function createUserSession(userId: string, redirectTo: string) {
+  const session = await storage.getSession();
+  session.set("userId", userId);
+  return redirect(redirectTo, {
+    headers: { "Set-Cookie": await storage.commitSession(session) },
+  });
 }
