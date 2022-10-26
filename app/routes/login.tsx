@@ -2,6 +2,77 @@
 import { useState } from "react";
 import FormFields from "~/components/form-fields";
 import { Layout } from "~/components/layout";
+import type { ActionFunction } from "@remix-run/node";  // <--- Remix looks for an exported function named action to set up a POST request on the route
+import { json } from "@remix-run/node";
+import {
+  validateEmail,
+  validateName,
+  validatePassword,
+} from "~/ultis/validators.server";
+import { login, register } from "~/ultis/auth.server";
+
+export const action: ActionFunction = async ({ request }) => {
+  /**
+   * 1. Get the form data from the request
+   */
+  const form = await request.formData();
+  const action = form.get("_action");
+  const email = form.get("email");
+  const password = form.get("password");
+  let firstName = form.get("firstName");
+  let lastName = form.get("lastName");
+
+  /**
+   * 2. Validate the form data
+   */
+  if (
+    typeof action !== "string" ||
+    typeof email !== "string" ||
+    typeof password !== "string"
+  ) {
+    return json({ error: "Invalid form data" }, { status: 400 });
+  }
+
+  if (
+    action === "register" &&
+    (typeof firstName !== "string" || typeof lastName !== "string")
+  ) {
+    return json({ error: "Invalid form data" }, { status: 400 });
+  }
+
+  /**
+   * 3. Returns an error along with the form field values if any problems occur
+   */
+  const errors = {
+    email: validateEmail(email),
+    password: validatePassword(password),
+    ...(action === "register"
+      ? {
+          firstName: validateName((firstName as string) || ""),
+          lastName: validateName((lastName as string) || ""),
+        }
+      : {}),
+  };
+
+  /**
+   * If there are any errors, return them
+   */
+  if (Object.values(errors).some(Boolean))
+    return json({ errors }, { status: 400 });
+
+  switch (action) {
+    case "login": {
+      return await login({ email, password });
+    }
+    case "register": {
+      firstName = firstName as string;
+      lastName = lastName as string;
+      return await register({ email, password, firstName, lastName });
+    }
+    default:
+      return json({ error: "Invalid form data" }, { status: 400 });
+  }
+};
 
 export default function Login() {
   const [action, setAction] = useState("login");

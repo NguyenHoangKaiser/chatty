@@ -53,6 +53,12 @@ const storage = createCookieSessionStorage({
   },
 });
 
+/**
+ * Create a new session for the user and redirect to the given url.
+ * @param userId set to the id of the logged in user
+ * @param redirectTo redirect the user to this specific route
+ * @returns commit the session when setting the cookie header
+ */
 export async function createUserSession(userId: string, redirectTo: string) {
   const session = await storage.getSession();
   session.set("userId", userId);
@@ -60,3 +66,4 @@ export async function createUserSession(userId: string, redirectTo: string) {
     headers: { "Set-Cookie": await storage.commitSession(session) },
   });
 }
+
