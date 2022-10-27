@@ -1,4 +1,3 @@
-// app/routes/login.tsx
 import { useState } from "react";
 import FormFields from "~/components/form-fields";
 import { Layout } from "~/components/layout";
@@ -20,9 +19,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  /**
-   * 1. Get the form data from the request
-   */
+  // Get the form data from the request
   const form = await request.formData();
   const action = form.get("_action");
   const email = form.get("email");
@@ -30,9 +27,7 @@ export const action: ActionFunction = async ({ request }) => {
   let firstName = form.get("firstName");
   let lastName = form.get("lastName");
 
-  /**
-   * 2. Validate the form data
-   */
+  // Validate the form data
   if (
     typeof action !== "string" ||
     typeof email !== "string" ||
@@ -48,9 +43,7 @@ export const action: ActionFunction = async ({ request }) => {
     return json({ error: "Invalid form data" }, { status: 400 });
   }
 
-  /**
-   * 3. Returns an error along with the form field values if any problems occur
-   */
+  // Returns an error along with the form field values if any problems occur
   const errors = {
     email: validateEmail(email),
     password: validatePassword(password),
@@ -62,9 +55,7 @@ export const action: ActionFunction = async ({ request }) => {
       : {}),
   };
 
-  /**
-   * If there are any errors, return them
-   */
+  // If there are any errors, return them
   if (Object.values(errors).some(Boolean))
     return json(
       {
@@ -114,9 +105,7 @@ export default function Login() {
     setFormData((form) => ({ ...form, [field]: event.target.value }));
   };
 
-  /**
-   * Clear out the form and any errors being shown when the user is shown an error and switches forms.
-   */
+  // Clear out the form and any errors being shown when the user is shown an error and switches forms.
   useEffect(() => {
     if (!firstLoad.current) {
       const newState = {
