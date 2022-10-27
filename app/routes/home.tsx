@@ -1,6 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData} from '@remix-run/react';
+import { useLoaderData, Outlet} from '@remix-run/react';
 import { requireUserId } from "~/ultis/auth.server";
 import { Layout } from "~/components/layout";
 import { UserPanel } from "~/components/user-panel";
@@ -16,6 +16,7 @@ export default function Home() {
   const {users} = useLoaderData();
   return (
     <Layout>
+      <Outlet />
       <div className="flex h-full">
         <UserPanel users={users} />
         <div className="flex-1"></div>
