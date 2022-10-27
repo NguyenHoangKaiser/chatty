@@ -26,6 +26,10 @@ export async function register(user: RegisterForm) {
   return createUserSession(newUser.id, "/");
 }
 
+/**
+ * Validate the user on email & password
+ * @returns a new session with the user's id and redirect to the home page if the user is valid 
+ */
 export async function login({ email, password }: LoginForm) {
   const user = await prisma.user.findUnique({ where: { email } });
 
@@ -43,7 +47,7 @@ if (!sessionSecret) {
 
 const storage = createCookieSessionStorage({
   cookie: {
-    name: "__session",
+    name: "chatty-session",
     secure: process.env.NODE_ENV === "production",
     secrets: [sessionSecret],
     path: "/",
@@ -81,7 +85,7 @@ export async function requireUserId(
   const userId = session.get("userId");
   if (!userId || typeof userId !== "string") {
     const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
-    throw redirect(`/login?${searchParams.toString()}`);
+    throw redirect(`/login?${searchParams}`);
   }
   return userId;
 }

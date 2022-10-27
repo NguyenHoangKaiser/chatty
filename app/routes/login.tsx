@@ -5,6 +5,8 @@ import { Layout } from "~/components/layout";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node"; // <--- Remix looks for an exported function named action to set up a POST request on the route
 import { redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
+import { useActionData } from "@remix-run/react";
+import { useRef, useEffect } from "react";
 import {
   validateEmail,
   validateName,
@@ -64,7 +66,14 @@ export const action: ActionFunction = async ({ request }) => {
    * If there are any errors, return them
    */
   if (Object.values(errors).some(Boolean))
-    return json({ errors }, { status: 400 });
+    return json(
+      {
+        errors,
+        fields: { email, password, firstName, lastName },
+        form: action,
+      },
+      { status: 400 }
+    );
 
   switch (action) {
     case "login": {
@@ -81,13 +90,21 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function Login() {
+  const actionData = useActionData(); // <--- This is where the data from the action function is stored
+  const firstLoad = useRef(true);
   const [action, setAction] = useState("login");
 
+  // Sets up an errors variable which will hold field-specific errors, such as "Invalid Email", in an object.
+  const [errors, setErrors] = useState(actionData?.errors || {});
+  // Sets up a formError variable which will hold error messages to display form messages such as "Incorrect Login".
+  const [formError, setFormError] = useState(actionData?.error || "");
+
+  // Updates the formData state variables to default to any values returned by the action function if available.
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
+    email: actionData?.fields?.email || "",
+    password: actionData?.fields?.password || "",
+    firstName: actionData?.fields?.lastName || "",
+    lastName: actionData?.fields?.firstName || "",
   });
 
   const handleInputChange = (
@@ -96,6 +113,35 @@ export default function Login() {
   ) => {
     setFormData((form) => ({ ...form, [field]: event.target.value }));
   };
+
+  /**
+   * Clear out the form and any errors being shown when the user is shown an error and switches forms.
+   */
+  useEffect(() => {
+    if (!firstLoad.current) {
+      const newState = {
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+      };
+      setErrors(newState);
+      setFormError("");
+      setFormData(newState);
+    }
+  }, [action]);
+
+  useEffect(() => {
+    if (!firstLoad.current) {
+      setFormError("");
+    }
+  }, [formData]);
+
+  // Bug here
+  /* useEffect(() => {
+    // We don't want to reset errors on page load because we want to see them
+    firstLoad.current = false;
+  }, []); */
 
   return (
     <Layout>
@@ -115,11 +161,15 @@ export default function Login() {
         </p>
 
         <form method="POST" className="rounded-2xl bg-gray-200 p-6 w-96">
+          <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+            {formError}
+          </div>
           <FormFields
             htmlFor="email"
             label="Email"
             value={formData.email}
             onChange={(e) => handleInputChange(e, "email")}
+            error={errors?.email}
           />
           <FormFields
             htmlFor="password"
@@ -127,21 +177,26 @@ export default function Login() {
             label="Password"
             value={formData.password}
             onChange={(e) => handleInputChange(e, "password")}
+            error={errors?.password}
           />
 
           {action === "register" && (
             <>
+              {/* First Name */}
               <FormFields
                 htmlFor="firstName"
                 label="First Name"
                 onChange={(e) => handleInputChange(e, "firstName")}
                 value={formData.firstName}
+                error={errors?.firstName}
               />
+              {/* Last Name */}
               <FormFields
                 htmlFor="lastName"
                 label="Last Name"
                 onChange={(e) => handleInputChange(e, "lastName")}
                 value={formData.lastName}
+                error={errors?.lastName}
               />
             </>
           )}
