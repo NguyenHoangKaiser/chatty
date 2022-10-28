@@ -34,3 +34,16 @@ export const getOtherUsers = async (userId: string) => {
     },
   });
 };
+
+/**
+ * Grab a user from the database  
+ * @param userId The id of the current user
+ * @returns the current user 
+ */
+export const getUserById = async (userId: string) => {
+  return prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+};
