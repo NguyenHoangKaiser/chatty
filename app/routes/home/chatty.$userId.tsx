@@ -2,6 +2,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { getUserById } from "~/ultis/user.server";
+import { Portal } from "~/components/portal";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { userId } = params;
@@ -16,5 +17,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
 export default function ChattyModal() {
   const {recipient} = useLoaderData();
-  return <h2>User: {recipient.profile.firstName}</h2>;
+  return <Portal wrapperId="chatty-modal">
+    <h2>User: {recipient.profile.firstName}</h2>
+  </Portal>;
 }
